@@ -4,13 +4,54 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/go-gota/gota/dataframe"
 	"gonum.org/v1/gonum/mat"
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/plotter"
 )
 
 func main() {
 	dfa := ReadCsv("Auto.csv")
+	plotMpgCylinders(dfa, "horsepower", "mpg")
+}
+
+func plotMpgCylinders(df dataframe.DataFrame, xColName string, yColName string) {
+	// Get all the values of x-axis column
+	xColSeries := df.Col(xColName)
+	// Get all the values of y-axis column
+	yColSeries := df.Col(yColName)
+	// Create a plotter with size as number of rows
+	pts := make(plotter.XYs, df.Nrow())
+	for i := range pts {
+		// Fill X axis with xColSeries
+		pts[i].X = xColSeries.Elem(i).Float()
+		// Fill Y axis with yColSeries
+		pts[i].Y = yColSeries.Elem(i).Float()
+	}
+	// Create a new Plot
+	p := plot.New()
+	p.Title.Text = fmt.Sprintf("%s Vs %s", strings.ToUpper(xColName), strings.ToUpper(yColName))
+	p.X.Label.Text = xColName
+	p.Y.Label.Text = yColName
+	// Add grid to the plot
+	p.Add(plotter.NewGrid())
+	// Create a new scatter with the plotter.Xys
+	s, err := plotter.NewScatter(pts)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	// Add scatter plotter to the plot
+	p.Add(s)
+	// Save the plot
+	err = p.Save(200, 200, fmt.Sprintf("%sVS%s.png", xColName, yColName))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+}
+
+func mean_std(dfa dataframe.DataFrame) {
 	cols := []string{
 		"mpg",
 		"cylinders",
