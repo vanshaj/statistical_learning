@@ -14,10 +14,12 @@ import (
 
 func main() {
 	dfa := ReadCsv("Auto.csv")
-	plotMpgCylinders(dfa, "horsepower", "mpg")
+	plotXY(dfa, "horsepower", "mpg")
+	plotXY(dfa, "displacement", "mpg")
+	plotXY(dfa, "weight", "mpg")
 }
 
-func plotMpgCylinders(df dataframe.DataFrame, xColName string, yColName string) {
+func plotXY(df dataframe.DataFrame, xColName string, yColName string) {
 	// Get all the values of x-axis column
 	xColSeries := df.Col(xColName)
 	// Get all the values of y-axis column
@@ -45,7 +47,7 @@ func plotMpgCylinders(df dataframe.DataFrame, xColName string, yColName string) 
 	// Add scatter plotter to the plot
 	p.Add(s)
 	// Save the plot
-	err = p.Save(200, 200, fmt.Sprintf("%sVS%s.png", xColName, yColName))
+	err = p.Save(400, 200, fmt.Sprintf("%sVS%s.png", xColName, yColName))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
