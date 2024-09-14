@@ -11,7 +11,7 @@ import (
 
 var (
 	FILENAME     string = "College.csv"
-	CREATE_QUERY string = fmt.Sprintf("CREATE TABLE COLLEGE AS select * from read_from_csv(%s)", FILENAME)
+	CREATE_QUERY string = fmt.Sprintf("CREATE TABLE COLLEGE AS select * from read_csv(%s)", FILENAME)
 )
 
 func createTable() {
@@ -62,6 +62,6 @@ func getCountTopCollege() {
 }
 
 func main() {
-	createTable()
+	// createTable()
 	getCountTopCollege()
 }
