@@ -7,7 +7,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/go-gota/gota/dataframe"
 	_ "github.com/marcboeker/go-duckdb"
 	"gonum.org/v1/gonum/mat"
 	"gonum.org/v1/plot"
@@ -15,8 +14,9 @@ import (
 )
 
 var (
-	FILENAME     string = "College.csv"
-	CREATE_QUERY string = fmt.Sprintf("CREATE TABLE COLLEGE AS select * from read_csv(%s)", FILENAME)
+	FILENAME             string = "College.csv"
+	CREATE_COLLEGE_QUERY string = fmt.Sprintf("CREATE TABLE IF NOT EXISTS COLLEGE AS select * from read_csv(%s)", FILENAME)
+	CREATE_AUTO_QUERY    string = fmt.Sprintf("CREATE TABLE IF NOT EXISTS AUTO AS select * from read_csv(%s)", FILENAME)
 )
 
 func main() {
@@ -25,28 +25,26 @@ func main() {
 	val := matrix.At(2, 2)
 	fmt.Println(val)
 	mean_std()
+	matrix2 := dbToMat("select horsepower, mpg from auto")
+	plotXY(matrix2, "horsepower", "mpg")
 	// dfa := ReadCsv("Auto.csv")
 	// plotXY(dfa, "horsepower", "mpg")
 	// plotXY(dfa, "displacement", "mpg")
 	// plotXY(dfa, "weight", "mpg")
 }
 
-func plotXY(df dataframe.DataFrame, xColName string, yColName string) {
-	// Get all the values of x-axis column
-	xColSeries := df.Col(xColName)
-	// Get all the values of y-axis column
-	yColSeries := df.Col(yColName)
-	// Create a plotter with size as number of rows
-	pts := make(plotter.XYs, df.Nrow())
-	for i := range pts {
-		// Fill X axis with xColSeries
-		pts[i].X = xColSeries.Elem(i).Float()
-		// Fill Y axis with yColSeries
-		pts[i].Y = yColSeries.Elem(i).Float()
+func plotXY(mat *mat.Dense, xColName string, yColName string) {
+	rows := mat.RawMatrix().Rows
+	pts := make(plotter.XYs, mat.RawMatrix().Rows)
+	for j := 0; j < rows; j++ {
+		pts[j].X = mat.At(j, 0)
+	}
+	for j := 0; j < rows; j++ {
+		pts[j].Y = mat.At(j, 1)
 	}
 	// Create a new Plot
 	p := plot.New()
-	p.Title.Text = fmt.Sprintf("%s Vs %s", strings.ToUpper(xColName), strings.ToUpper(yColName))
+	p.Title.Text = fmt.Sprintf("%s Vs %s", strings.ToUpper(yColName), strings.ToUpper(xColName))
 	p.X.Label.Text = xColName
 	p.Y.Label.Text = yColName
 	// Add grid to the plot
@@ -59,7 +57,7 @@ func plotXY(df dataframe.DataFrame, xColName string, yColName string) {
 	// Add scatter plotter to the plot
 	p.Add(s)
 	// Save the plot
-	err = p.Save(400, 200, fmt.Sprintf("%sVS%s.png", xColName, yColName))
+	err = p.Save(400, 200, fmt.Sprintf("%sVS%s.png", yColName, xColName))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -71,8 +69,7 @@ func createAuto() {
 		log.Fatalf("Failed to open database due to error %s\n", err)
 	}
 	defer db.Close()
-	auto_query := "CREATE TABLE AUTO AS select * from read_csv(Auto.csv)"
-	_, err = db.Exec(auto_query)
+	_, err = db.Exec(CREATE_AUTO_QUERY)
 	if err != nil {
 		log.Fatalf("Failed to execute query due to error %s\n", err)
 	}
@@ -90,7 +87,7 @@ func createCollege() {
 		log.Fatalf("Failed to create connection due to error %s\n", err)
 	}
 	defer conn.Close()
-	rows, err := conn.QueryContext(ctx, CREATE_QUERY)
+	rows, err := conn.QueryContext(ctx, CREATE_COLLEGE_QUERY)
 	if err != nil {
 		log.Fatalf("Failed to execute query due to error %s\n", err)
 	}
@@ -130,7 +127,7 @@ func mean_std() {
 
 }
 
-// where can be like top10perc > 10
+// where can be like top10perc > 50
 func dbToMat(query string) *mat.Dense {
 	db, err := sql.Open("duckdb", "test.db")
 	if err != nil {
