@@ -27,15 +27,17 @@ func main() {
 	mean_std()
 	matrix2 := dbToMat("select horsepower, mpg from auto")
 	plotXY(matrix2, "horsepower", "mpg")
-	// dfa := ReadCsv("Auto.csv")
-	// plotXY(dfa, "horsepower", "mpg")
-	// plotXY(dfa, "displacement", "mpg")
-	// plotXY(dfa, "weight", "mpg")
+
+	// plot TSS vs fitted values
+	query = "select mpg - (select avg(mpg) from auto) as tss, mpg from auto"
+	matrix_tss_y := dbToMat(query)
+	plotXY(matrix_tss_y, "fitted_value", "tss")
+	query = "select mpg - (select avg(mpg) from auto) as tss, mpg from auto"
 }
 
 func plotXY(mat *mat.Dense, xColName string, yColName string) {
 	rows := mat.RawMatrix().Rows
-	pts := make(plotter.XYs, mat.RawMatrix().Rows)
+	pts := make(plotter.XYs, rows)
 	for j := 0; j < rows; j++ {
 		pts[j].X = mat.At(j, 0)
 	}
