@@ -51,3 +51,22 @@ func (l *LinearCoeff) CalculateIntercept(x, y []float64) error {
 
 	return nil
 }
+
+func (l *LinearCoeff) CalculateRSS(x, y []float64) float64 {
+	var rss float64
+	for i := 0; i < len(y); i++ {
+		predicted_y := l.Intercept + l.Slope*x[i]
+		rss = rss + math.Pow((y[i]-predicted_y), 2)
+	}
+	return rss
+}
+
+func (l *LinearCoeff) CalculateStdErrorSlope(x []float64, rseSquare float64) float64 {
+	var denom float64
+	mean_x := stat.Mean(x, nil)
+	for i := 0; i < len(x); i++ {
+		denom = denom + math.Pow((x[i]-mean_x), 2)
+	}
+	stderr := math.Sqrt((rseSquare / denom))
+	return stderr
+}
