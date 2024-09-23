@@ -70,3 +70,16 @@ func (l *LinearCoeff) CalculateStdErrorSlope(x []float64, rseSquare float64) flo
 	stderr := math.Sqrt((rseSquare / denom))
 	return stderr
 }
+
+func (l *LinearCoeff) CalculateStdErrorIntercept(x []float64, rseSquare float64) float64 {
+	part1 := 1 / len(x)
+	var part2 float64
+	part2_num := math.Pow(stat.Mean(x, nil), 2)
+	var part2_den float64
+	for _, val := range x {
+		part2_den = part2_den + math.Pow((val-stat.Mean(x, nil)), 2)
+	}
+	part2 = part2_num / part2_den
+	stderr := rseSquare * (float64(part1) + part2)
+	return stderr
+}
