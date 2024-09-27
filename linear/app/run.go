@@ -12,10 +12,23 @@ import (
 var (
 	CREATE_BOSTON_TABLE_QUERY string = fmt.Sprintf("CREATE TABLE IF NOT EXISTS BOSTON AS SELECT * FROM read_csv(%s)", "data/boston.csv")
 	SELECT_LSTAT_QUERY        string = "SELECT LSTAT FROM BOSTON"
+	SELECT_AGE_QUERY          string = "SELECT AGE FROM BOSTON"
 	SELECT_MEDV_QUERY         string = "SELECT MEDV FROM BOSTON"
 )
 
 func Run() error {
+	if err := db.NewDuckDB(); err != nil {
+		return err
+	}
+	defer db.CloseDB()
+	_, err := calculateMultipleRegressionCoefficient([]string{SELECT_LSTAT_QUERY, SELECT_AGE_QUERY}, SELECT_MEDV_QUERY)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func RunY() error {
 	if err := db.NewDuckDB(); err != nil {
 		return err
 	}
