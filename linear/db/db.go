@@ -46,3 +46,12 @@ func GetValues(query string) ([]float64, error) {
 	}
 	return items, nil
 }
+
+func ExecQuery(query string) error {
+	_, err := DB.ExecContext(context.Background(), query)
+	if err != nil {
+		log.Error().Msgf("Unable to exec query '%s' due to error '%s'\n", query, err.Error())
+		return err
+	}
+	return nil
+}

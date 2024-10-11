@@ -10,6 +10,30 @@ import (
 )
 
 var (
+	CREATE_CAR_SEATS_TABLE_QUERY string   = fmt.Sprintf("create table if not exists carseats as select * from read_csv(%s)", "data/carseats.csv")
+	setup_query                  []string = []string{"alter table carseats add column shelvelocgood int",
+		"alter table carseats add column shelvelocmedium int",
+		"alter table carseats add column urbanyes int",
+		"alter table carseats add column usyes int",
+		"update carseats set shelvelocgood = case when shelveloc = 'Good' then 1 else 0 end",
+		"update carseats set shelvelocmedium = case when shelveloc = 'Medium' then 1 else 0 end",
+		"update carseats set urbanyes = case when urban = 'Yes' then 1 else 0 end",
+		"update carseats set usyes = case when us = 'Yes' then 1 else 0 end"}
+	select_sales_query              string = "select sales from carseats"
+	select_compprice_query          string = "select compprice from carseats"
+	select_income_query             string = "select income from carseats"
+	select_adv_query                string = "select advertising from carseats"
+	select_pop_query                string = "select population from carseats"
+	select_price_query              string = "select price from carseats"
+	select_shelve_good_query        string = "select shelvelocgood from carseats"
+	select_shelve_medium_query      string = "select shelvelocmedium from carseats"
+	select_age_query                string = "select age from carseats"
+	select_ed_query                 string = "select education from carseats"
+	select_urban_query              string = "select urbanyes from carseats"
+	select_us_query                 string = "select usyes from carseats"
+	select_inc_adv_interact_query   string = "select MULTIPLY(income, advertising) from carseats"
+	select_price_age_interact_query string = "select MULTIPLY(price, age) from carseats"
+
 	CREATE_BOSTON_TABLE_QUERY      string = fmt.Sprintf("CREATE TABLE IF NOT EXISTS BOSTON AS SELECT * FROM read_csv(%s)", "data/boston.csv")
 	SELECT_LSTATE_AGE_INTERACTION  string = "SELECT MULTIPLY(LSTAT, AGE) FROM BOSTON"
 	SELECT_LSTATE_POLY_INTERACTION string = "SELECT MULTIPLY(LSTAT, LSTAT) FROM BOSTON"
@@ -29,6 +53,23 @@ var (
 )
 
 func Run() error {
+	if err := db.NewDuckDB(); err != nil {
+		return err
+	}
+	defer db.CloseDB()
+	for _, query := range setup_query {
+		if err := db.ExecQuery(query); err != nil {
+			return err
+		}
+	}
+	_, err := calculateMultipleRegressionCoefficient([]string{select_compprice_query, select_income_query, select_adv_query, select_pop_query, select_price_query, select_shelve_good_query, select_shelve_medium_query, select_age_query, select_ed_query, select_urban_query, select_us_query, select_inc_adv_interact_query, select_price_age_interact_query}, select_sales_query)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func RunZ() error {
 	if err := db.NewDuckDB(); err != nil {
 		return err
 	}
