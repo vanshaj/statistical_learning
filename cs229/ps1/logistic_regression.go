@@ -9,7 +9,9 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-type LogisticRegression struct{}
+type LogisticRegression struct {
+	theta *mat.Dense
+}
 
 func (l *LogisticRegression) hypothesis(theta, x *mat.Dense) *mat.Dense {
 	//log.Println("Calculating Hypothesis for LogisticRegression...")
@@ -67,7 +69,7 @@ func (l *LogisticRegression) hessian(theta, x *mat.Dense) *mat.Dense {
 func (l *LogisticRegression) fitUsingNewton(x, y *mat.Dense) *mat.Dense {
 	_, numFeatures := x.Dims()
 	theta := mat.NewDense(numFeatures, 1, nil)
-	for _ = range 100 {
+	for range 100 {
 		gradi := l.gradient(theta, x, y)
 		hess := l.hessian(theta, x)
 		hessInv := mat.NewDense(numFeatures, numFeatures, nil)
@@ -86,7 +88,7 @@ func (l *LogisticRegression) fitGradient(x, y *mat.Dense) *mat.Dense {
 	learningRate := 0.001
 	_, numFeatures := x.Dims()
 	theta := mat.NewDense(numFeatures, 1, nil)
-	for _ = range 1000000 {
+	for range 1000000 {
 		gradi := l.gradient(theta, x, y)
 		gradiMul := mat.NewDense(numFeatures, 1, nil)
 		for i := range numFeatures {
@@ -101,11 +103,26 @@ func (l *LogisticRegression) fitGradient(x, y *mat.Dense) *mat.Dense {
 func (l *LogisticRegression) Fit(isNewton bool, x, y *mat.Dense) {
 	if isNewton {
 		log.Println("Using newton method")
-		theta := l.fitUsingNewton(x, y)
-		log.Printf("Output vector = %v\n", mat.Formatted(theta, mat.Prefix("    "), mat.Squeeze()))
+		l.theta = l.fitUsingNewton(x, y)
+		log.Printf("Output vector = %v\n", mat.Formatted(l.theta, mat.Prefix("    "), mat.Squeeze()))
 	} else {
 		log.Println("Using gradient descent")
-		theta := l.fitGradient(x, y)
-		log.Printf("Output vector = %v\n", mat.Formatted(theta, mat.Prefix("    "), mat.Squeeze()))
+		l.theta = l.fitGradient(x, y)
+		log.Printf("Output vector = %v\n", mat.Formatted(l.theta, mat.Prefix("    "), mat.Squeeze()))
 	}
+}
+
+func (l *LogisticRegression) Predict(x *mat.Dense) {
+	log.Println("Predicting using Logistic Regression...")
+	hypothesis := l.hypothesis(l.theta, x)
+	numExamples, _ := x.Dims()
+	predictions := mat.NewDense(numExamples, 1, nil)
+	for i := range numExamples {
+		if hypothesis.At(i, 0) >= 0.5 {
+			predictions.Set(i, 0, 1)
+		} else {
+			predictions.Set(i, 0, 0)
+		}
+	}
+	log.Printf("Output vector = %v\n", mat.Formatted(predictions, mat.Prefix("    "), mat.Squeeze()))
 }

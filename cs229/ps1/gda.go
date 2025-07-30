@@ -10,8 +10,8 @@ import (
 // Gaussian Discriminant Analysis
 type BinaryGda struct {
 	phi   float64
-	mean0 float64
-	mean1 float64
+	mean0 *mat.Dense
+	mean1 *mat.Dense
 	sigma *mat.Dense
 }
 
@@ -27,7 +27,8 @@ func (g *BinaryGda) calculatePhi(y *mat.Dense) {
 }
 
 func (g *BinaryGda) calculateMean0(x, y *mat.Dense) {
-	numSamples, _ := x.Dims()
+	numSamples, numFeatures := x.Dims()
+	g.mean0 = mat.NewDense(1, numFeatures, nil)
 	numerator := 0.0
 	denominator := 0
 	for i := range numSamples {
@@ -37,31 +38,36 @@ func (g *BinaryGda) calculateMean0(x, y *mat.Dense) {
 		}
 		denominator = denominator + val
 	}
-	for i := range numSamples {
-		if y.At(i, 0) == 0.0 {
-			numerator = numerator + x.At(i, 0)
+	for j := range numFeatures {
+		for i := range numSamples {
+			if y.At(i, 0) == 0.0 {
+				numerator = numerator + x.At(i, j)
+			}
 		}
+		g.mean0.Set(0, j, numerator/float64(denominator))
 	}
-	g.mean0 = numerator / float64(denominator)
 }
 
 func (g *BinaryGda) calculateMean1(x, y *mat.Dense) {
-	numSamples, _ := x.Dims()
+	numSamples, numFeatures := x.Dims()
+	g.mean1 = mat.NewDense(1, numFeatures, nil)
 	numerator := 0.0
 	denominator := 0
 	for i := range numSamples {
 		val := 0
-		if y.At(i, 0) == 1.0 {
+		if y.At(i, 0) == 0.0 {
 			val = 1
 		}
 		denominator = denominator + val
 	}
-	for i := range numSamples {
-		if y.At(i, 0) == 1.0 {
-			numerator = numerator + x.At(i, 0)
+	for j := range numFeatures {
+		for i := range numSamples {
+			if y.At(i, 0) == 1.0 {
+				numerator = numerator + x.At(i, j)
+			}
 		}
+		g.mean1.Set(0, j, numerator/float64(denominator))
 	}
-	g.mean1 = numerator / float64(denominator)
 }
 
 func (g *BinaryGda) calculateCovMatrix(x *mat.Dense) {
@@ -72,10 +78,10 @@ func (g *BinaryGda) calculateCovMatrix(x *mat.Dense) {
 	for i := range numSamples {
 		for j := range numFeatures {
 			if j == 0 {
-				new_val := x.At(i, j) - mu_0
+				new_val := x.At(i, j) - mu_0.At(0, j)
 				centeredVector.Set(i, j, new_val)
 			} else {
-				new_val := x.At(i, j) - mu_1
+				new_val := x.At(i, j) - mu_1.At(0, j)
 				centeredVector.Set(i, j, new_val)
 			}
 		}
@@ -98,22 +104,19 @@ func (g *BinaryGda) Fit(x, y *mat.Dense) {
 	g.calculateCovMatrix(x)
 }
 
-func (g *BinaryGda) calculatePDF(mean float64, x, covMat *mat.Dense, numFeatures int) float64 {
+func (g *BinaryGda) calculatePDF(mean *mat.Dense, x, covMat *mat.Dense, numFeatures int) float64 {
 	numMulFactor := math.Pow(2*math.Pi, float64(numFeatures/2))
 	denominator := numMulFactor * math.Pow(mat.Det(covMat), 0.5)
 	expFactor := mat.NewDense(1, 1, nil)
 
-	numSamples, _ := x.Dims()
-	xCentered := mat.NewDense(numSamples, 1, nil)
-	for i := range numSamples {
-		xCentered.Set(i, 0, x.At(i, 0)-mean)
-	}
+	xCentered := mat.NewDense(1, numFeatures, nil)
+	xCentered.Sub(x, mean)
 	xCenteredT := xCentered.T()
-	covMatI := mat.NewDense(numSamples, numSamples, nil)
+	covMatI := mat.NewDense(numFeatures, numFeatures, nil)
 	covMatI.Inverse(covMat)
-	firstMul := mat.NewDense(1, numSamples, nil)
-	firstMul.Mul(xCenteredT, covMatI)
-	expFactor.Mul(firstMul, xCentered)
+	firstMul := mat.NewDense(1, numFeatures, nil)
+	firstMul.Mul(xCentered, covMatI)
+	expFactor.Mul(firstMul, xCenteredT)
 
 	exponentPower := (-0.5 * expFactor.At(0, 0))
 	numerator := math.Pow(math.E, exponentPower)
@@ -135,11 +138,18 @@ func (g *BinaryGda) calculateProb1(x *mat.Dense) float64 {
 }
 
 func (g *BinaryGda) Predict(x *mat.Dense) {
-	prob0 := g.calculateProb0(x)
-	prob1 := g.calculateProb1(x)
-	if prob0 > prob1 {
-		log.Println("0.0")
-	} else {
-		log.Println("1.0")
+	numSamples, numFeatures := x.Dims()
+	for i := range numSamples {
+		eachItem := mat.NewDense(1, numFeatures, nil)
+		for j := range numFeatures {
+			eachItem.Set(0, j, x.At(i, j))
+		}
+		prob0 := g.calculateProb0(eachItem)
+		prob1 := g.calculateProb1(eachItem)
+		if prob0 > prob1 {
+			log.Println("0.0")
+		} else {
+			log.Println("1.0")
+		}
 	}
 }

@@ -19,9 +19,9 @@ func readFile(filename string) (*mat.Dense, *mat.Dense) {
 		panic(err)
 	}
 	csvReader := csv.NewReader(file)
-	xFeatures := make([]float64, 0, 2400)
-	yFeatures := make([]float64, 0, 800)
 	record, err := csvReader.ReadAll()
+	xFeatures := make([]float64, 0, len(record)*3) // 3 columns in the dataset
+	yFeatures := make([]float64, 0, len(record)*1) // 1 column in the dataset
 	numFeatures := 3
 	for i := range len(record) {
 		for j := range numFeatures { // as there are 3 columns
@@ -48,9 +48,9 @@ func readFile(filename string) (*mat.Dense, *mat.Dense) {
 	return x, y
 }
 
-func main() {
+func predict_lgr() {
 	fmt.Println("Regression YaYYYYY")
-	filename := "./data/ps1/ds1_train.csv"
+	filename := "./data/ps1/ds2_train.csv"
 	absFilePath, err := filepath.Abs(filename)
 	if err != nil {
 		log.Fatalf("Unable to generate absolute file path for file %s due to  %s", err, filename)
@@ -58,5 +58,35 @@ func main() {
 	l := ps1.LogisticRegression{}
 	x, y := readFile(absFilePath)
 	l.Fit(true, x, y)
-	l.Fit(false, x, y)
+	//l.Fit(false, x, y)
+	predictFilename := "./data/ps1/ds2_valid_copy.csv"
+	absFilePathPredict, err := filepath.Abs(predictFilename)
+	if err != nil {
+		log.Fatalf("Unable to generate absolute file path for file %s due to  %s", err, predictFilename)
+	}
+	x_predict, _ := readFile(absFilePathPredict)
+	l.Predict(x_predict)
+}
+
+func predict_gda() {
+	fmt.Println("Regression YaYYYYY")
+	filename := "./data/ps1/ds2_train.csv"
+	absFilePath, err := filepath.Abs(filename)
+	if err != nil {
+		log.Fatalf("Unable to generate absolute file path for file %s due to  %s", err, filename)
+	}
+	l := ps1.BinaryGda{}
+	x, y := readFile(absFilePath)
+	l.Fit(x, y)
+	predictFilename := "./data/ps1/ds2_valid_copy.csv"
+	absFilePathPredict, err := filepath.Abs(predictFilename)
+	if err != nil {
+		log.Fatalf("Unable to generate absolute file path for file %s due to  %s", err, predictFilename)
+	}
+	x_predict, _ := readFile(absFilePathPredict)
+	l.Predict(x_predict)
+}
+
+func main() {
+	predict_gda()
 }
