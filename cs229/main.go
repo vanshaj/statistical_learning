@@ -22,9 +22,9 @@ func readFile(filename string) (*mat.Dense, *mat.Dense) {
 	xFeatures := make([]float64, 0, 2400)
 	yFeatures := make([]float64, 0, 800)
 	record, err := csvReader.ReadAll()
-	//log.Printf("Total number of examples are %d\n", len(record))
+	numFeatures := 3
 	for i := range len(record) {
-		for j := range 3 { // as there are 3 columns
+		for j := range numFeatures { // as there are 3 columns
 			if i == 0 {
 				continue
 			}
@@ -32,7 +32,8 @@ func readFile(filename string) (*mat.Dense, *mat.Dense) {
 			if err != nil {
 				//log.Fatalf("error parsing %s\n", err)
 			}
-			if j == 3-1 {
+			// At last column, we need to add 1.0 for the bias term and use the actual value as the label in matrix y
+			if j == numFeatures-1 {
 				xFeatures = append(xFeatures, 1.0)
 				yFeatures = append(yFeatures, float64(val))
 			} else {
