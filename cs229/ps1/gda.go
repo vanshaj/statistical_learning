@@ -55,7 +55,7 @@ func (g *BinaryGda) calculateMean1(x, y *mat.Dense) {
 	denominator := 0
 	for i := range numSamples {
 		val := 0
-		if y.At(i, 0) == 0.0 {
+		if y.At(i, 0) == 1.0 {
 			val = 1
 		}
 		denominator = denominator + val
@@ -70,14 +70,14 @@ func (g *BinaryGda) calculateMean1(x, y *mat.Dense) {
 	}
 }
 
-func (g *BinaryGda) calculateCovMatrix(x *mat.Dense) {
+func (g *BinaryGda) calculateCovMatrix(x, y *mat.Dense) {
 	numSamples, numFeatures := x.Dims()
 	centeredVector := mat.NewDense(numSamples, numFeatures, nil)
 	mu_0 := g.mean0
 	mu_1 := g.mean1
 	for i := range numSamples {
 		for j := range numFeatures {
-			if j == 0 {
+			if y.At(i, 0) == 0 {
 				new_val := x.At(i, j) - mu_0.At(0, j)
 				centeredVector.Set(i, j, new_val)
 			} else {
@@ -91,7 +91,7 @@ func (g *BinaryGda) calculateCovMatrix(x *mat.Dense) {
 	covMat.Mul(transposeXM, centeredVector)
 	for i := range numFeatures {
 		for j := range numFeatures {
-			covMat.Set(i, j, covMat.At(i, j)/float64(numSamples-1))
+			covMat.Set(i, j, covMat.At(i, j)/float64(numSamples))
 		}
 	}
 	g.sigma = covMat
@@ -101,7 +101,7 @@ func (g *BinaryGda) Fit(x, y *mat.Dense) {
 	g.calculatePhi(y)
 	g.calculateMean0(x, y)
 	g.calculateMean1(x, y)
-	g.calculateCovMatrix(x)
+	g.calculateCovMatrix(x, y)
 }
 
 func (g *BinaryGda) calculatePDF(mean *mat.Dense, x, covMat *mat.Dense, numFeatures int) float64 {
