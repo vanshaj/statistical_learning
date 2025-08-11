@@ -13,6 +13,7 @@ import (
 )
 
 func readFile(filename string) (*mat.Dense, *mat.Dense) {
+	xCols := 5
 	log.Printf("Reading file %s\n", filename)
 	file, err := os.Open(filename)
 	if err != nil {
@@ -20,9 +21,9 @@ func readFile(filename string) (*mat.Dense, *mat.Dense) {
 	}
 	csvReader := csv.NewReader(file)
 	record, err := csvReader.ReadAll()
-	xFeatures := make([]float64, 0, len(record)*3) // 3 columns in the dataset
-	yFeatures := make([]float64, 0, len(record)*1) // 1 column in the dataset
-	numFeatures := 3
+	xFeatures := make([]float64, 0, len(record)*xCols) // 3 columns in the dataset
+	yFeatures := make([]float64, 0, len(record)*1)     // 1 column in the dataset
+	numFeatures := xCols
 	for i := range len(record) {
 		for j := range numFeatures { // as there are 3 columns
 			if i == 0 {
@@ -42,10 +43,31 @@ func readFile(filename string) (*mat.Dense, *mat.Dense) {
 		}
 	}
 	log.Printf("Converting file %s to matrix\n", filename)
-	log.Printf("Size of array is %d, and dimension of matrix is %d*%d\n", len(xFeatures), len(yFeatures), 3)
-	x := mat.NewDense(len(yFeatures), 3, xFeatures)
+	log.Printf("Size of array is %d, and dimension of matrix is %d*%d\n", len(xFeatures), len(yFeatures), xCols)
+	x := mat.NewDense(len(yFeatures), xCols, xFeatures)
 	y := mat.NewDense(len(yFeatures), 1, yFeatures)
 	return x, y
+}
+
+func predict_poissongr() {
+	fmt.Println("Regression YaYYYYY")
+	filename := "./data/ps1/ds4_train.csv"
+	absFilePath, err := filepath.Abs(filename)
+	if err != nil {
+		log.Fatalf("Unable to generate absolute file path for file %s due to  %s", err, filename)
+	}
+	p := ps1.PoissonRegression{}
+	x, y := readFile(absFilePath)
+	p.Fit(x, y)
+
+	predictFilename := "./data/ps1/ds4_valid_copy.csv"
+	absFilePathPredict, err := filepath.Abs(predictFilename)
+	if err != nil {
+		log.Fatalf("Unable to generate absolute file path for file %s due to  %s", err, predictFilename)
+	}
+	x_predict, _ := readFile(absFilePathPredict)
+	p.Predict(x_predict)
+
 }
 
 func predict_lgr() {
@@ -88,5 +110,5 @@ func predict_gda() {
 }
 
 func main() {
-	predict_gda()
+	predict_poissongr()
 }
