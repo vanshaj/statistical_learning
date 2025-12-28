@@ -20,10 +20,24 @@ func withDenseLayers() {
 		2, 5, -1, 2.0,
 		-1.5, 2.7, 3.3, -0.8,
 	}
+	actualOutput := []float64{
+		1, 0, 0,
+		0, 1, 0,
+		0, 1, 0,
+	}
+	actualOutputMat := mat.NewDense(3, 3, actualOutput)
+	// First calculate forward Pass X*W^T+B
 	outputL1 := h1.CalculateForwardPassOutput(inputF, 3)
+	// Apply ReLU
+	h1.ActivationReLU(outputL1)
 	h2 := neuralnet.NewHidderLayer(3, 3)
+	// Now Calculate forward Pass X2*W2^T+B
 	outputL2 := h2.CalculateForwardPassOutputMat(outputL1)
+	// Apply Softmax
+	h2.ActivationSoftmax(outputL2)
 	fmt.Printf("%v\n", mat.Formatted(outputL2, mat.Prefix("  ")))
+	loss := neuralnet.CrossEntropyLoss(outputL2, actualOutputMat)
+	fmt.Printf("Loss for these weights: %v\n", loss)
 }
 
 func simpleNeuron() {

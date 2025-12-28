@@ -2,6 +2,7 @@ package neuralnet
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 
 	"gonum.org/v1/gonum/mat"
@@ -64,7 +65,15 @@ func ForwardPassExample() {
 }
 
 func NewHidderLayer(n_Neurons, n_Input int) *HiddenLayer {
+	/*
+		There will be X rows of inputs but each row will have n_Input columns
+		For each input among n_Input each neuron will have a weight
+		and there are n_Neurons
+		so the size of weight matrix is n_Input * n_Neurons
+	*/
 	weights := make([]float64, n_Input*n_Neurons)
+
+	// Every neuron will have 1 bias
 	bias := make([]float64, n_Neurons)
 	// Will create weights and bias automatically
 	for i := range n_Input * n_Neurons {
@@ -81,10 +90,37 @@ func NewHidderLayer(n_Neurons, n_Input int) *HiddenLayer {
 	}
 }
 
+// This will be applied at the end output
 func (hl *HiddenLayer) ActivationSoftmax(inputMat *mat.Dense) {
-	r, c := inputMat.Dims()
+	r, _ := inputMat.Dims()
 	// First we will get max from each row
-	maxMat := mat.NewDense(r, c, nil)
+	ithRowMaxMat := mat.NewVecDense(r, nil)
+	for i := range r {
+		ithRow := inputMat.RowView(i)
+		ithRowMaxMat.SetVec(i, mat.Max(ithRow))
+	}
+	// Before we apply exponential to each value we will subtract each value from max of that row to protect exp to become too large
+	inputMat.Apply(func(i, j int, v float64) float64 {
+		// i will be row and j will be column
+		var output float64
+		// First let's shift left the value
+		v = ithRowMaxMat.At(i, 0) - v
+		// Now lets apply exponential
+		output = math.Exp(v)
+		return output
+	}, inputMat)
+	// Now create a vector that will contain sum of each values of a row after we calculate exponent
+	ithRowSumMat := mat.NewVecDense(r, nil)
+	for i := range r {
+		ithRow := inputMat.RowView(i)
+		ithRowSumMat.SetVec(i, mat.Sum(ithRow))
+	}
+	// Now divide each value from the sum of each values in that row
+	inputMat.Apply(func(i, j int, v float64) float64 {
+		var output float64
+		output = v / ithRowSumMat.At(i, 0)
+		return output
+	}, inputMat)
 }
 
 // First we will apply ReLU and then we will go to forward Pass
@@ -102,9 +138,6 @@ func (hl *HiddenLayer) ActivationReLU(inputMat *mat.Dense) {
 func (hl *HiddenLayer) CalculateForwardPassOutputMat(inputMat *mat.Dense) *mat.Dense {
 	inputRowCount, _ := inputMat.Dims()
 	weightsMat := mat.NewDense(hl.NeuronCount, hl.WeightInputCount, hl.Weights) // Weight matrix of x * n size
-
-	// Apply ReluActivation
-	hl.ActivationReLU(inputMat)
 
 	biasExpand := make([]float64, hl.NeuronCount*len(hl.Bias))
 	for i := range biasExpand {
