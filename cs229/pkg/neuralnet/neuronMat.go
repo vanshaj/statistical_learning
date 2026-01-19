@@ -48,9 +48,9 @@ func (hl *HiddenLayer) CalculateForwardPassOutput(input *mat.Dense) *mat.Dense {
 	outputMat.Mul(input, hl.Weights.T())
 
 	// 2. Add Bias: Add the row vector hl.Bias to every row of outputMat
-	for i := 0; i < nSamples; i++ {
+	for i := range nSamples {
 		row := outputMat.RawRowView(i)
-		for j := 0; j < nNeurons; j++ {
+		for j := range nNeurons {
 			row[j] += hl.Bias.At(0, j)
 		}
 	}
@@ -82,9 +82,8 @@ func (hl *HiddenLayer) ActivationReLUBackward(dValues, layerInput *mat.Dense) *m
 // ActivationSoftmax normalizes rows into probability distributions (Stable version)
 func (hl *HiddenLayer) ActivationSoftmax(inputMat *mat.Dense) {
 	r, c := inputMat.Dims()
-	for i := 0; i < r; i++ {
+	for i := range r {
 		row := inputMat.RawRowView(i)
-
 		// Find max for numerical stability
 		maxVal := row[0]
 		for _, v := range row {
@@ -92,16 +91,14 @@ func (hl *HiddenLayer) ActivationSoftmax(inputMat *mat.Dense) {
 				maxVal = v
 			}
 		}
-
 		// Subtract max and exponentiate
 		var sum float64
-		for j := 0; j < c; j++ {
+		for j := range c {
 			row[j] = math.Exp(row[j] - maxVal)
 			sum += row[j]
 		}
-
 		// Normalize to get probabilities
-		for j := 0; j < c; j++ {
+		for j := range c {
 			row[j] /= sum
 		}
 	}
@@ -112,8 +109,8 @@ func (hl *HiddenLayer) CategoricalCrossEntropy(yPred, yTrue *mat.Dense) float64 
 	nSamples, nClasses := yPred.Dims()
 	var totalLoss float64
 
-	for i := 0; i < nSamples; i++ {
-		for j := 0; j < nClasses; j++ {
+	for i := range nSamples {
+		for j := range nClasses {
 			if yTrue.At(i, j) > 0 {
 				val := yPred.At(i, j)
 				// Clip to prevent log(0)
